@@ -78,10 +78,11 @@ npm run dev
 
 ## 👥 L'Équipe Temporelle
 
-Ce projet a été réalisé avec passion par :
+Ce projet a été réalisé avec passion et amour par :
 - Arnaud Gaydamour
 - Nicolas Patino
 - Elias El Oudghiri
+- Tristan GOTTSCHALK-CASTELAS
 
 ---
 
