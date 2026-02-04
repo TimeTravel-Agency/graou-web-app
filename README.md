@@ -83,6 +83,7 @@ Ce projet a été réalisé avec passion et amour par :
 - Nicolas Patino
 - Elias El Oudghiri
 - Tristan GOTTSCHALK-CASTELAS
+- Jean-Paul Lalande
 
 ---
 
