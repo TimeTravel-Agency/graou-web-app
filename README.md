@@ -80,6 +80,7 @@ npm run dev
 
 Ce projet a été réalisé avec passion par :
 - Arnaud Gaydamour
+- Nicolas Patino
 
 ---
 
