@@ -5,16 +5,73 @@ import React from "react"
 import { useState, useRef, useEffect, useMemo } from "react"
 import { MessageCircle, X, Send, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Switch } from "@/components/ui/switch"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
 
 export function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false)
   const [input, setInput] = useState("")
+  const [isDinoMode, setIsDinoMode] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const dinoModeRef = useRef(false)
+  const dinoSoundsRef = useRef<HTMLAudioElement[]>([])
+  const lastMessageCountRef = useRef(0)
+  const hasMountedRef = useRef(false)
 
-  const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat" }), [])
-  
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: "/api/chat",
+        body: () => ({ dinoMode: dinoModeRef.current }),
+      }),
+    []
+  )
+
+  const initDinoSounds = () => {
+    if (dinoSoundsRef.current.length > 0) return
+    const sounds = ["/sounds/roar.mp3", "/sounds/roar2.mp3", "/sounds/roar3.mp3"]
+    dinoSoundsRef.current = sounds.map((src) => {
+      const audio = new Audio(src)
+      audio.preload = "auto"
+      return audio
+    })
+  }
+
+  const primeAudio = () => {
+    initDinoSounds()
+    const firstSound = dinoSoundsRef.current[0]
+    if (!firstSound) return
+    const previousVolume = firstSound.volume
+    firstSound.volume = 0
+    firstSound
+      .play()
+      .then(() => {
+        firstSound.pause()
+        firstSound.currentTime = 0
+        firstSound.volume = previousVolume
+      })
+      .catch(() => {
+        firstSound.volume = previousVolume
+      })
+  }
+
+  const playDinoRoar = () => {
+    initDinoSounds()
+    const sounds = dinoSoundsRef.current
+    if (sounds.length === 0) return
+    const choice = sounds[Math.floor(Math.random() * sounds.length)]
+    sounds.forEach((sound) => {
+      if (!sound.paused) {
+        sound.pause()
+        sound.currentTime = 0
+      }
+    })
+    choice.currentTime = 0
+    choice.volume = 1
+    choice.play().catch(() => {})
+  }
+
   const { messages, sendMessage, status } = useChat({
     transport,
   })
@@ -28,6 +85,33 @@ export function ChatbotWidget() {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true
+      lastMessageCountRef.current = messages.length
+      return
+    }
+
+    if (messages.length <= lastMessageCountRef.current) {
+      lastMessageCountRef.current = messages.length
+      return
+    }
+
+    lastMessageCountRef.current = messages.length
+    const lastMessage = messages[messages.length - 1]
+    if (lastMessage?.role !== "assistant") return
+    if (!dinoModeRef.current) return
+    playDinoRoar()
+  }, [messages])
+
+  const handleDinoModeChange = (checked: boolean) => {
+    dinoModeRef.current = checked
+    setIsDinoMode(checked)
+    if (checked) {
+      primeAudio()
+    }
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -56,6 +140,10 @@ export function ChatbotWidget() {
     )
   }
 
+  const welcomeMessage = isDinoMode
+    ? "GRAOU ! Moi assistant temporel dino. Toi vouloir planifier voyage dans le temps ?"
+    : "Bienvenue chez TimeTravel Agency ! Je suis votre assistant temporel. Comment puis-je vous aider à planifier votre voyage dans le temps ?"
+
   return (
     <>
       {/* Chat Window */}
@@ -68,8 +156,24 @@ export function ChatbotWidget() {
                 Assistant Temporel
               </h3>
               <p className="text-primary-foreground/70 text-sm">
-                {isLoading ? "En train d'écrire..." : "Toujours disponible"}
+                {isLoading
+                  ? "En train d'écrire..."
+                  : isDinoMode
+                    ? "Mode dinosaure activé"
+                    : "Toujours disponible"}
               </p>
+              <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-primary-foreground/10 px-3 py-1">
+                <span className="text-xs text-primary-foreground">
+                  Mode dinosaure
+                </span>
+                <Switch
+                  id="dino-mode"
+                  checked={isDinoMode}
+                  onCheckedChange={handleDinoModeChange}
+                  aria-label="Activer le mode dinosaure"
+                  className="data-[state=checked]:bg-primary-foreground data-[state=unchecked]:bg-primary-foreground/40"
+                />
+              </div>
             </div>
             <button
               type="button"
@@ -92,9 +196,7 @@ export function ChatbotWidget() {
                   </div>
                   <div className="bg-card rounded-2xl rounded-tl-none p-4 border border-border/50">
                     <p className="text-foreground text-sm leading-relaxed">
-                      Bienvenue chez TimeTravel Agency ! Je suis votre assistant
-                      temporel. Comment puis-je vous aider à planifier votre
-                      voyage dans le temps ?
+                      {welcomeMessage}
                     </p>
                   </div>
                 </div>
