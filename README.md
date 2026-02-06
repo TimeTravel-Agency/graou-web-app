@@ -63,7 +63,7 @@ Pour lancer le portail temporel sur votre machine locale :
 git clone https://github.com/TimeTravel-Agency/graou-web-app.git
 
 # 2. Installer les dépendances
-npm install
+npm install --legacy-peer-deps
 
 # 3. Configurer les variables d'environnement
 # Créez un fichier .env.local et ajoutez votre clé API Groq :
